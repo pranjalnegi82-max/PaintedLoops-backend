@@ -21,7 +21,9 @@ exports.getProducts = async (req, res) => {
       ORDER BY ${orderBy}
       LIMIT ? OFFSET ?`;
 
-    const [products] = await db.execute(sql, [...params, parseInt(limit), parseInt(offset)]);
+    const limitNum = Number(limit);
+    const offsetNum = Number(offset);
+    const [products] = await db.execute(sql, [...params, limitNum, offsetNum]);
     const [[{ total }]] = await db.execute(
       `SELECT COUNT(*) AS total FROM products p JOIN categories c ON p.category_id=c.id WHERE ${where.join(' AND ')}`,
       params
