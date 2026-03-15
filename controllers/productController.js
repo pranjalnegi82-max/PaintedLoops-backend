@@ -51,7 +51,7 @@ exports.getProduct = async (req, res) => {
 
     const [reviews] = await db.execute(
       `SELECT r.*, u.first_name, u.last_name FROM reviews r JOIN users u ON r.user_id=u.id
-       WHERE r.product_id=? ORDER BY r.created_at DESC LIMIT 10`, [rows[0].id]
+       WHERE r.product_id=? AND r.is_approved=1 ORDER BY r.created_at DESC LIMIT 10`, [rows[0].id]
     );
     res.json({ success: true, product: rows[0], reviews });
   } catch (err) {
@@ -101,15 +101,20 @@ exports.deleteProduct = async (req, res) => {
 // POST /api/products/:id/review  (protected)
 exports.addReview = async (req, res) => {
   try {
-    const { rating, comment } = req.body;
+    const { rating, comment, photo_url } = req.body;
     const product_id = req.params.id;
     await db.execute(
-      'INSERT INTO reviews (product_id,user_id,rating,comment) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE rating=?,comment=?',
-      [product_id, req.user.id, rating, comment, rating, comment]
+      `INSERT INTO reviews (product_id, user_id, rating, comment, photo_url) 
+       VALUES (?, ?, ?, ?, ?) 
+       ON DUPLICATE KEY UPDATE rating=?, comment=?, photo_url=?`,
+      [product_id, req.user.id, rating, comment, photo_url || null, rating, comment, photo_url || null]
     );
     // Recalculate product rating
     await db.execute(
-      'UPDATE products p SET rating=(SELECT AVG(rating) FROM reviews WHERE product_id=?), review_count=(SELECT COUNT(*) FROM reviews WHERE product_id=?) WHERE p.id=?',
+      `UPDATE products p SET 
+        rating=(SELECT AVG(rating) FROM reviews WHERE product_id=?), 
+        review_count=(SELECT COUNT(*) FROM reviews WHERE product_id=?) 
+       WHERE p.id=?`,
       [product_id, product_id, product_id]
     );
     res.json({ success: true, message: 'Review submitted!' });
