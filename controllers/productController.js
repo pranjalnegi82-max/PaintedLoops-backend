@@ -3,13 +3,18 @@ const db = require('../config/db');
 // GET /api/products  — list with filters
 exports.getProducts = async (req, res) => {
   try {
-    const { category, search, sort, page = 1, limit = 20 } = req.query;
+    const category = req.query.category || null;
+    const search = req.query.search || null;
+    const sort = req.query.sort || null;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
+
     let where = ['p.is_active = 1'];
     let params = [];
 
     if (category) { where.push('c.slug = ?'); params.push(category); }
-    if (search)   { where.push('(p.name LIKE ? OR p.description LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
+    if (search) { where.push('(p.name LIKE ? OR p.description LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
 
     const orderMap = { price_asc:'p.price ASC', price_desc:'p.price DESC', rating:'p.rating DESC', newest:'p.created_at DESC' };
     const orderBy = orderMap[sort] || 'p.created_at DESC';
@@ -19,21 +24,20 @@ exports.getProducts = async (req, res) => {
       FROM products p JOIN categories c ON p.category_id = c.id
       WHERE ${where.join(' AND ')}
       ORDER BY ${orderBy}
-      LIMIT ? OFFSET ?`;
+      LIMIT ${limit} OFFSET ${offset}`;
 
-    const limitNum = Number(limit);
-    const offsetNum = Number(offset);
-    const [products] = await db.execute(sql, [...params, limitNum, offsetNum]);
+    const [products] = await db.execute(sql, params);
     const [[{ total }]] = await db.execute(
       `SELECT COUNT(*) AS total FROM products p JOIN categories c ON p.category_id=c.id WHERE ${where.join(' AND ')}`,
       params
     );
 
-    res.json({ success: true, total, page: parseInt(page), pages: Math.ceil(total / limit), products });
+    res.json({ success: true, total, page, pages: Math.ceil(total / limit), products });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 
 // GET /api/products/:slug
 exports.getProduct = async (req, res) => {
