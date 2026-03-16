@@ -101,10 +101,14 @@ exports.getAllOrders = async (req, res) => {
     let where = []; let params = [];
     if (status) { where.push('o.status=?'); params.push(status); }
     const cond = where.length ? 'WHERE ' + where.join(' AND ') : '';
-    const [orders] = await db.execute(
-      `SELECT o.*, u.first_name, u.last_name, u.email FROM orders o JOIN users u ON o.user_id=u.id ${cond} ORDER BY o.created_at DESC LIMIT ? OFFSET ?`,
-      [...params, parseInt(limit), parseInt(offset)]
-    );
+const limitNum = Number(limit);
+const offsetNum = Number(offset);
+const [orders] = await db.execute(
+  `SELECT o.*, u.first_name, u.last_name, u.email FROM orders o JOIN users u ON o.user_id=u.id ${cond} ORDER BY o.created_at DESC LIMIT ${limitNum} OFFSET ${offsetNum}`,
+  params
+);
+res.json({ success: true, orders });
+    
     res.json({ success: true, orders });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
