@@ -47,11 +47,11 @@ exports.createOrder = async (req, res) => {
     await conn.commit();
 
     // Send confirmation email (non-blocking)
-    const [[user]] = await db.execute('SELECT email,first_name,last_name,phone FROM users WHERE id=?', [req.user.id]);    mailer.sendOrderConfirmation(user.email, user.first_name, order_number, total).catch(()=>{});
+    const [[user]] = await db.execute('SELECT email,first_name,last_name,phone FROM users WHERE id=?', [req.user.id]);    mailer.sendOrderConfirmation(user.email, user.first_name, order_number, total).catch(err => console.error('Customer email error:', err.message));
 
     // Notify shop owner about new order
     const customerName = `${user.first_name} ${user.last_name}`;
-    mailer.sendOwnerNotification(order_number, total, customerName, user.email, items).catch(()=>{});
+   mailer.sendOwnerNotification(order_number, total, customerName, user.email, items).catch(err => console.error('Owner email error:', err.message));
 
     // WhatsApp notification to owner
     whatsapp.sendOrderWhatsApp(order_number, customerName, user.email, total, items).catch(()=>{});whatsapp.sendCustomerOrderWhatsApp(user.phone, user.first_name, order_number, total).catch(()=>{});
