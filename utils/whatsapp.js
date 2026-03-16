@@ -44,3 +44,32 @@ Stock has been automatically restored.`;
     body: message
   });
 };
+
+// ── Send order confirmation to customer ──
+exports.sendCustomerOrderWhatsApp = async (customerPhone, customerName, orderNumber, total) => {
+  if (!customerPhone) return;
+
+  // Format phone number
+  let phone = customerPhone.replace(/\s+/g, '').replace(/[^0-9+]/g, '');
+  if (!phone.startsWith('+')) phone = '+91' + phone;
+
+  const message = `🌸 *PaintedLoops — Order Confirmed!*
+
+Hi ${customerName}! 🎉
+
+Your order has been successfully placed.
+
+📦 *Order:* #${orderNumber}
+💰 *Total:* ₹${total}
+
+🔍 *Track your order here:*
+https://paintedloop.netlify.app/paintedloops-orders.html
+
+Thank you for shopping with PaintedLoops! 🧶❤️`;
+
+  await client.messages.create({
+    from: process.env.TWILIO_WHATSAPP_FROM,
+    to:   'whatsapp:' + phone,
+    body: message
+  });
+};

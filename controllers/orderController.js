@@ -47,15 +47,14 @@ exports.createOrder = async (req, res) => {
     await conn.commit();
 
     // Send confirmation email (non-blocking)
-    const [[user]] = await db.execute('SELECT email,first_name,last_name FROM users WHERE id=?', [req.user.id]);
-    mailer.sendOrderConfirmation(user.email, user.first_name, order_number, total).catch(()=>{});
+    const [[user]] = await db.execute('SELECT email,first_name,last_name,phone FROM users WHERE id=?', [req.user.id]);    mailer.sendOrderConfirmation(user.email, user.first_name, order_number, total).catch(()=>{});
 
     // Notify shop owner about new order
     const customerName = `${user.first_name} ${user.last_name}`;
     mailer.sendOwnerNotification(order_number, total, customerName, user.email, items).catch(()=>{});
 
     // WhatsApp notification to owner
-    whatsapp.sendOrderWhatsApp(order_number, customerName, user.email, total, items).catch(()=>{});
+    whatsapp.sendOrderWhatsApp(order_number, customerName, user.email, total, items).catch(()=>{});whatsapp.sendCustomerOrderWhatsApp(user.phone, user.first_name, order_number, total).catch(()=>{});
 
     res.status(201).json({ success: true, message: 'Order placed!', order_number, order_id, total });
   } catch (err) {
