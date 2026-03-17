@@ -2,8 +2,8 @@ const Razorpay = require('razorpay');
 const crypto   = require('crypto');
 const db       = require('../config/db');
 
-const razorpay = new Razorpay({
-  key_id:     process.env.RAZORPAY_KEY_ID,
+const getRazorpayInstance = () => new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
@@ -17,7 +17,7 @@ exports.createRazorpayOrder = async (req, res) => {
       currency: 'INR',
       receipt:  'receipt_' + Date.now(),
     };
-    const order = await razorpay.orders.create(options);
+    const order = await getRazorpayInstance().orders.create(options);
     res.json({
       success:  true,
       order_id: order.id,
